@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import qrImage from '../public/qr.jpeg'
 
 const whatsappNumber = '9345927994'
 const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Hello Sri Krishna, I want to pay the balance amount of ₹6,700 INR to enable this account.')}`
+const upiId = 'srik9585a-1@okhdfcbank'
+const amount = '₹6,700.00'
 
 const summaryItems = [
   { label: 'Transfer fee', value: '₹0' },
@@ -11,15 +14,45 @@ const summaryItems = [
 ]
 
 function App() {
-  const [counter, setCounter] = useState(6)
+  const getTimeFrom5AM = () => {
+    const now = new Date()
+    const startOfFiveAM = new Date(now)
+    startOfFiveAM.setHours(5, 0, 0, 0)
+
+    if (now < startOfFiveAM) {
+      return 0
+    }
+
+    return now.getTime() - startOfFiveAM.getTime()
+  }
+
+  const [elapsedSince5AM, setElapsedSince5AM] = useState(getTimeFrom5AM)
+  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false)
+  const [paymentView, setPaymentView] = useState('chooser')
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCounter((prev) => prev + 1)
-    }, 1400)
+      setElapsedSince5AM(getTimeFrom5AM())
+    }, 1000)
 
     return () => clearInterval(timer)
   }, [])
+
+  const handlePayNowClick = () => {
+    setPaymentView('chooser')
+    setIsPayDialogOpen(true)
+  }
+
+  const handlePayByWhatsApp = () => {
+    window.open(whatsappLink, '_blank', 'noopener,noreferrer')
+    setIsPayDialogOpen(false)
+    setPaymentView('chooser')
+  }
+
+  const totalMinutes = Math.floor(elapsedSince5AM / (1000 * 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  const seconds = Math.floor((elapsedSince5AM / 1000) % 60)
 
   return (
     <div className="page-shell">
@@ -39,9 +72,10 @@ function App() {
           <div className="header-copy">
             <div className="title-row">
               <p className="eyebrow">Due balance</p>
-              <div className="count-badge">
+              <div className="count-badge" aria-live="polite">
                 <span className="count-dot" />
-                {counter}s
+                {String(hours)}:{String(minutes).padStart(2, '0')} hrs
+                <span className="count-label">since 5 AM</span>
               </div>
             </div>
             <h1>Pay now to enable this account</h1>
@@ -77,9 +111,9 @@ function App() {
           </div>
 
           <div className="cta-row">
-            <a href={whatsappLink} target="_blank" rel="noreferrer" className="primary-btn">
+            <button type="button" className="primary-btn" onClick={handlePayNowClick}>
               Pay ₹6,700 now
-            </a>
+            </button>
             <button type="button" className="secondary-btn">
               Schedule
             </button>
@@ -141,6 +175,67 @@ function App() {
           </div>
         </aside>
       </main>
+
+      {isPayDialogOpen && (
+        <div className="pay-dialog-backdrop" onClick={() => setIsPayDialogOpen(false)}>
+          <div
+            className="pay-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Choose payment method"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="pay-dialog-header">
+              <div>
+                <p className="eyebrow">Choose payment method</p>
+                <h3>Pay balance</h3>
+              </div>
+              <button
+                type="button"
+                className="dialog-close"
+                onClick={() => setIsPayDialogOpen(false)}
+                aria-label="Close payment options"
+              >
+                ×
+              </button>
+            </div>
+
+            {paymentView === 'chooser' ? (
+              <div className="payment-choice-grid">
+                <button type="button" className="choice-card" onClick={handlePayByWhatsApp}>
+                  <span className="choice-icon whatsapp">W</span>
+                  <strong>WhatsApp message</strong>
+                  <small>Send payment request instantly</small>
+                </button>
+
+                <button type="button" className="choice-card" onClick={() => setPaymentView('qr')}>
+                  <span className="choice-icon qr">QR</span>
+                  <strong>Scan QR</strong>
+                  <small>Open the UPI QR code</small>
+                </button>
+              </div>
+            ) : (
+              <div className="qr-viewer">
+                <div className="qr-preview-shell">
+                  <img src={qrImage} alt="UPI QR code for payment" className="qr-preview" />
+                </div>
+                <div className="qr-meta">
+                  <p>UPI ID: <strong>{upiId}</strong></p>
+                  <p>Amount: <strong>{amount}</strong></p>
+                </div>
+                <div className="qr-actions">
+                  <button type="button" className="secondary-btn modal-btn" onClick={() => setPaymentView('chooser')}>
+                    Back
+                  </button>
+                  <button type="button" className="primary-btn modal-btn" onClick={handlePayByWhatsApp}>
+                    WhatsApp instead
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
