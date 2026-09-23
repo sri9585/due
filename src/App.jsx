@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import './App.css'
 
 const whatsappNumber = '9345927994'
@@ -10,6 +11,16 @@ const summaryItems = [
 ]
 
 function App() {
+  const [counter, setCounter] = useState(6)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCounter((prev) => prev + 1)
+    }, 1400)
+
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <div className="page-shell">
       <div className="background-glow glow-one" />
@@ -26,7 +37,13 @@ function App() {
           </div>
 
           <div className="header-copy">
-            <p className="eyebrow">Due balance</p>
+            <div className="title-row">
+              <p className="eyebrow">Due balance</p>
+              <div className="count-badge">
+                <span className="count-dot" />
+                {counter}s
+              </div>
+            </div>
             <h1>Pay now to enable this account</h1>
             <p className="subtitle">
               Complete the outstanding payment of ₹6,700 INR to Sri Krishna as soon as possible.
